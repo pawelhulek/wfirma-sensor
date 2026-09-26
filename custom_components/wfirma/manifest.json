@@ -1,0 +1,13 @@
+{
+  "domain": "wfirma",
+  "name": "wFirma",
+  "codeowners": ["@pawelhulek"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/pawelhulek/wfirma-sensor",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/pawelhulek/wfirma-sensor/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

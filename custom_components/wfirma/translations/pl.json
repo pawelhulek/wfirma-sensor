@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Połącz z wFirma",
+        "description": "W wFirma otwórz Ustawienia → Bezpieczeństwo i wygeneruj klucze API: otrzymasz klucz dostępu i klucz tajny. Klucz aplikacji wydaje wFirma na prośbę o dostęp do API.",
+        "data": {
+          "access_key": "Klucz dostępu",
+          "secret_key": "Klucz tajny",
+          "app_key": "Klucz aplikacji"
+        }
+      },
+      "company": {
+        "title": "Wybierz firmę",
+        "description": "Te klucze otwierają kilka firm. Wybierz, którą śledzić; kolejną dodasz, dodając integrację ponownie.",
+        "data": {
+          "company_id": "Firma"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Nowe klucze wFirma",
+        "description": "wFirma nie akceptuje już kluczy dla {company}. Wpisz nowe.",
+        "data": {
+          "access_key": "Klucz dostępu",
+          "secret_key": "Klucz tajny",
+          "app_key": "Klucz aplikacji"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "wFirma odrzuciła te klucze albo nie mają dostępu do tej firmy.",
+      "cannot_connect": "Nie udało się połączyć z wFirma. Spróbuj ponownie za kilka minut.",
+      "rate_limited": "wFirma prosi o zwolnienie. Odczekaj 5 minut i spróbuj ponownie.",
+      "unknown": "Wystąpił nieoczekiwany błąd. Szczegóły są w logu Home Assistant."
+    },
+    "abort": {
+      "already_configured": "Ta firma z wFirma jest już skonfigurowana.",
+      "reauth_successful": "Nowe klucze działają."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "unpaid_invoices": {
+        "name": "Nieopłacone faktury"
+      },
+      "unpaid_amount": {
+        "name": "Kwota nieopłacona"
+      },
+      "overdue_invoices": {
+        "name": "Przeterminowane faktury"
+      },
+      "overdue_amount": {
+        "name": "Kwota przeterminowana"
+      },
+      "revenue_month_net": {
+        "name": "Przychód w tym miesiącu (netto)"
+      },
+      "revenue_month_gross": {
+        "name": "Przychód w tym miesiącu (brutto)"
+      }
+    }
+  }
+}

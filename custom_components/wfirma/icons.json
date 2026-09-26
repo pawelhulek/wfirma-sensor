@@ -1,0 +1,24 @@
+{
+  "entity": {
+    "sensor": {
+      "unpaid_invoices": {
+        "default": "mdi:file-document-alert-outline"
+      },
+      "unpaid_amount": {
+        "default": "mdi:cash-clock"
+      },
+      "overdue_invoices": {
+        "default": "mdi:file-alert"
+      },
+      "overdue_amount": {
+        "default": "mdi:cash-remove"
+      },
+      "revenue_month_net": {
+        "default": "mdi:cash-plus"
+      },
+      "revenue_month_gross": {
+        "default": "mdi:cash-multiple"
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect wFirma",
+        "description": "In wFirma, open Settings → Security and create API keys: you get an access key and a secret key. The app key is issued by wFirma when you request API access.",
+        "data": {
+          "access_key": "Access key",
+          "secret_key": "Secret key",
+          "app_key": "App key"
+        }
+      },
+      "company": {
+        "title": "Choose the company",
+        "description": "These keys can open several companies. Pick the one to follow; add the integration again for another.",
+        "data": {
+          "company_id": "Company"
+        }
+      },
+      "reauth_confirm": {
+        "title": "New wFirma keys",
+        "description": "wFirma no longer accepts the keys for {company}. Enter new ones.",
+        "data": {
+          "access_key": "Access key",
+          "secret_key": "Secret key",
+          "app_key": "App key"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "wFirma rejected these keys, or they cannot open this company.",
+      "cannot_connect": "wFirma could not be reached. Try again in a few minutes.",
+      "rate_limited": "wFirma asked to slow down. Wait 5 minutes and try again.",
+      "unknown": "Something unexpected went wrong. The Home Assistant log has the details."
+    },
+    "abort": {
+      "already_configured": "This wFirma company is already set up.",
+      "reauth_successful": "The new keys work."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "unpaid_invoices": {
+        "name": "Unpaid invoices"
+      },
+      "unpaid_amount": {
+        "name": "Unpaid amount"
+      },
+      "overdue_invoices": {
+        "name": "Overdue invoices"
+      },
+      "overdue_amount": {
+        "name": "Overdue amount"
+      },
+      "revenue_month_net": {
+        "name": "Revenue this month (net)"
+      },
+      "revenue_month_gross": {
+        "name": "Revenue this month (gross)"
+      }
+    }
+  }
+}
