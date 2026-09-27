@@ -1,0 +1,18 @@
+download_invoice:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: wfirma
+    number:
+      required: true
+      example: "FV 3/9/2026"
+      selector:
+        text:
+
+get_documents:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: wfirma

@@ -57,7 +57,70 @@
       },
       "revenue_month_gross": {
         "name": "Przychód w tym miesiącu (brutto)"
+      },
+      "unpaid_expenses": {
+        "name": "Rachunki do zapłaty"
+      },
+      "unpaid_expenses_amount": {
+        "name": "Kwota rachunków do zapłaty"
+      },
+      "next_zus_payment": {
+        "name": "Następna płatność ZUS"
+      },
+      "next_income_tax_payment": {
+        "name": "Następna płatność podatku dochodowego"
+      },
+      "next_vat_payment": {
+        "name": "Następna płatność VAT"
       }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Płatności i podatki"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Pobierz fakturę PDF",
+      "description": "Zapisuje fakturę sprzedaży jako PDF w folderze multimediów (media/wfirma), tak jak drukuje ją wFirma.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Firma",
+          "description": "Firma w wFirmie. Potrzebne tylko, gdy skonfigurowano więcej niż jedną."
+        },
+        "number": {
+          "name": "Numer faktury",
+          "description": "Pełny numer, np. FV 3/9/2026."
+        }
+      }
+    },
+    "get_documents": {
+      "name": "Pobierz dokumenty i terminy",
+      "description": "Zwraca nieopłacone i przeterminowane faktury, rachunki do zapłaty oraz najbliższe terminy ZUS/podatków z ostatniego odświeżenia.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Firma",
+          "description": "Firma w wFirmie. Potrzebne tylko, gdy skonfigurowano więcej niż jedną."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_company": {
+      "message": "Nie znaleziono załadowanej firmy wFirma."
+    },
+    "choose_company": {
+      "message": "Skonfigurowano kilka firm wFirma: wybierz jedną."
+    },
+    "invoice_not_found": {
+      "message": "W wFirmie nie ma faktury o numerze {number}."
+    },
+    "download_failed": {
+      "message": "Nie udało się pobrać faktury {number}: {reason}"
+    },
+    "path_not_allowed": {
+      "message": "Home Assistant nie może zapisywać w {path}. Dodaj ten katalog do allowlist_external_dirs."
     }
   }
 }

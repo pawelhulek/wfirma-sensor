@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 import logging
+from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -13,23 +15,45 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import WfirmaClient
-from .const import CONF_COMPANY_NAME, DOMAIN, EVENT_INVOICE_PAID, SCAN_INTERVAL
+from .const import (
+    CONF_COMPANY_NAME,
+    DOMAIN,
+    EVENT_INVOICE_PAID,
+    SCAN_INTERVAL,
+    TAX_PAYMENT_LOOKBACK,
+)
+from .deadlines import Deadline, TaxPayment, TaxProfile, build_deadlines
 from .exceptions import WfirmaAuthError, WfirmaError
+from .expenses import ExpenseSummary, summarize_expenses
 from .models import Invoice
 from .summary import Summary, settled_since, summarize
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class WfirmaCoordinator(DataUpdateCoordinator[Summary]):
+@dataclass(frozen=True, slots=True)
+class Snapshot:
+    """Everything one poll learned. Optional parts are None when wFirma would not give them."""
+
+    today: date
+    invoices: Summary
+    expenses: ExpenseSummary | None
+    profile: TaxProfile | None
+    tax_payments: tuple[TaxPayment, ...] | None
+    deadlines: tuple[Deadline, ...] | None
+
+
+class WfirmaCoordinator(DataUpdateCoordinator[Snapshot]):
     """One coordinator per wFirma company."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, client: WfirmaClient) -> None:
         super().__init__(hass, _LOGGER, config_entry=entry, name=DOMAIN, update_interval=SCAN_INTERVAL)
         self.client = client
         self._previous_unpaid: frozenset[str] | None = None
+        self._profile: TaxProfile | None = None
+        self._failing: set[str] = set()
 
-    async def _async_update_data(self) -> Summary:
+    async def _async_update_data(self) -> Snapshot:
         today = dt_util.now().date()
         try:
             unpaid = await self.client.unpaid_invoices()
@@ -45,7 +69,38 @@ class WfirmaCoordinator(DataUpdateCoordinator[Summary]):
             retry = await self._announce_paid(settled_since(self._previous_unpaid, summary))
         # Invoices we could not look up stay "previously unpaid", so the next poll retries them.
         self._previous_unpaid = summary.unpaid_ids | retry
-        return summary
+
+        expenses = await self._optional("cost invoices", self.client.unpaid_expenses)
+        if self._profile is None:  # tax settings change about once a year: fetch once per start
+            self._profile = await self._optional("company tax settings", self.client.company_profile)
+        payments = await self._optional(
+            "tax payments", lambda: self.client.tax_payments_since(today - TAX_PAYMENT_LOOKBACK)
+        )
+        deadlines = build_deadlines(self._profile, payments or (), today) if self._profile else None
+        return Snapshot(
+            today=today,
+            invoices=summary,
+            expenses=summarize_expenses(expenses, today) if expenses is not None else None,
+            profile=self._profile,
+            tax_payments=payments,
+            deadlines=deadlines,
+        )
+
+    async def _optional[T](self, what: str, fetch: Callable[[], Awaitable[T]]) -> T | None:
+        """Extras must never take the invoice sensors down.
+
+        An ACCESS DENIED here usually means the keys lack that module, not that they
+        are wrong, so it is not escalated to re-authentication.
+        """
+        try:
+            result = await fetch()
+        except WfirmaError as err:
+            log = _LOGGER.debug if what in self._failing else _LOGGER.warning
+            log("wFirma %s unavailable: %s", what, err)
+            self._failing.add(what)
+            return None
+        self._failing.discard(what)
+        return result
 
     async def _announce_paid(self, candidate_ids: Iterable[str]) -> frozenset[str]:
         """Fire an event only for invoices wFirma confirms are settled.

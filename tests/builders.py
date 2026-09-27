@@ -23,6 +23,43 @@ def invoice_dict(**overrides: Any) -> dict[str, Any]:
     return {**base, **overrides}
 
 
+def expense_dict(**overrides: Any) -> dict[str, Any]:
+    """A cost invoice ("expense") record, trimmed to the fields the integration reads."""
+    base: dict[str, Any] = {
+        "id": "501",
+        "fullnumber": "FZ 12/09/2026",
+        "date": "2026-09-21",
+        "payment_date": "2026-10-05",
+        "paymentstate": "unpaid",
+        "brutto": "123.00",
+        "netto": "100.00",
+        "remaining": "123.00",
+        "alreadypaid": "0.00",
+        "currency": "PLN",
+        "type": "invoice",
+        "draft": "0",
+        "is_rejected": "0",
+        "contractor_detail": {"name": "Orange Polska S.A.", "nip": "5260250995"},
+    }
+    return {**base, **overrides}
+
+
+def payment_dict(**overrides: Any) -> dict[str, Any]:
+    """A payment against a tax declaration; ZUS payments carry the contribution split."""
+    base: dict[str, Any] = {
+        "id": "9001",
+        "object_name": "declaration_header",
+        "object_id": "127088694",
+        "value": "800.00",
+        "social": "0.00",
+        "health": "0.00",
+        "labor_fund": "0.00",
+        "date": "2026-09-15",
+        "type": "expense",
+    }
+    return {**base, **overrides}
+
+
 def api_payload(
     module: str,
     entity: str,

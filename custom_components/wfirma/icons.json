@@ -18,7 +18,35 @@
       },
       "revenue_month_gross": {
         "default": "mdi:cash-multiple"
+      },
+      "unpaid_expenses": {
+        "default": "mdi:receipt-text-clock-outline"
+      },
+      "unpaid_expenses_amount": {
+        "default": "mdi:cash-minus"
+      },
+      "next_zus_payment": {
+        "default": "mdi:shield-account-outline"
+      },
+      "next_income_tax_payment": {
+        "default": "mdi:bank-outline"
+      },
+      "next_vat_payment": {
+        "default": "mdi:percent-box-outline"
       }
+    },
+    "calendar": {
+      "calendar": {
+        "default": "mdi:calendar-clock"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "service": "mdi:file-pdf-box"
+    },
+    "get_documents": {
+      "service": "mdi:file-document-multiple-outline"
     }
   }
 }

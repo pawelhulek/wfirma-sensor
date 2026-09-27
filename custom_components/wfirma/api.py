@@ -6,14 +6,15 @@ Request format, headers and status codes follow https://doc.wfirma.pl/.
 from __future__ import annotations
 
 import asyncio
+import json
 from collections.abc import Iterator, Mapping
 from datetime import date
-import json
 from typing import Any
 
 import aiohttp
 
 from .const import API_BASE_URL, MAX_PAGES, PAGE_LIMIT, REQUEST_TIMEOUT
+from .deadlines import TaxPayment, TaxProfile
 from .exceptions import (
     WfirmaAuthError,
     WfirmaConnectionError,
@@ -21,11 +22,13 @@ from .exceptions import (
     WfirmaRateLimitError,
     WfirmaResponseError,
 )
+from .expenses import Expense
 from .models import Company, Invoice
 
 _AUTH_CODES = frozenset({"AUTH", "ACCESS DENIED"})
 _RATE_LIMIT_CODES = frozenset({"TOTAL REQUESTS LIMIT EXCEEDED", "AUTH FAILED LIMIT WAIT 5 MINUTES"})
 _NOT_FOUND_CODES = frozenset({"NOT FOUND"})
+_DECLARATION = "declaration_header"
 
 
 def _raise_for_code(code: str) -> None:
@@ -146,9 +149,10 @@ class WfirmaClient:
         """A client for another company, sharing the session and keys."""
         return WfirmaClient(self._session, *self._keys, company_id)
 
-    async def _request(
+    async def _post(
         self, module: str, action: str, body: Mapping[str, Any] | None = None, record_id: str | None = None
-    ) -> dict[str, Any]:
+    ) -> tuple[str, bytes]:
+        """POST and return (content type, raw body); network and HTTP errors are raised here."""
         path = f"{API_BASE_URL}/{module}/{action}" + (f"/{record_id}" if record_id else "")
         params = {"inputFormat": "json", "outputFormat": "json"}
         if self._company_id:
@@ -156,14 +160,20 @@ class WfirmaClient:
         try:
             async with asyncio.timeout(REQUEST_TIMEOUT):
                 response = await self._session.post(path, params=params, json=body or {}, headers=self._headers)
-                text = await response.text()
+                raw = await response.read()
         except (aiohttp.ClientError, TimeoutError) as err:
             raise WfirmaConnectionError(f"cannot reach wFirma: {err!r}") from err
         if response.status in (401, 403):
             raise WfirmaAuthError(f"HTTP {response.status}")
         if response.status >= 400:
             raise WfirmaConnectionError(f"HTTP {response.status}")
-        return _parse(text)
+        return response.headers.get("Content-Type", ""), raw
+
+    async def _request(
+        self, module: str, action: str, body: Mapping[str, Any] | None = None, record_id: str | None = None
+    ) -> dict[str, Any]:
+        _, raw = await self._post(module, action, body, record_id)
+        return _parse(raw.decode("utf-8", errors="replace"))
 
     async def _find_all(
         self, module: str, entity: str, condition: Mapping[str, str] | None
@@ -210,3 +220,39 @@ class WfirmaClient:
             return None
         record = next(_records(payload, "invoices", "invoice"), None)
         return Invoice.from_api(record) if record is not None else None
+
+    async def find_invoice(self, number: str) -> Invoice | None:
+        """The invoice with exactly this full number (e.g. "FV 3/9/2026")."""
+        condition = {"field": "Invoice.fullnumber", "operator": "eq", "value": number}
+        records = await self._find_all("invoices", "invoice", condition)
+        return next((i for i in map(Invoice.from_api, records) if i.number == number), None)
+
+    async def download_invoice(self, invoice_id: str) -> bytes:
+        """The invoice as a PDF, exactly as wFirma prints it."""
+        if not invoice_id.isdigit():
+            raise ValueError("invoice id must be numeric")
+        content_type, raw = await self._post("invoices", "download", record_id=invoice_id)
+        if "pdf" in content_type.lower() or raw.startswith(b"%PDF-"):
+            return raw
+        _parse(raw.decode("utf-8", errors="replace"))  # raises for any error status
+        raise WfirmaResponseError("download did not return a PDF")
+
+    async def unpaid_expenses(self) -> tuple[Expense, ...]:
+        """Cost invoices with an outstanding balance."""
+        condition = {"field": "Expense.remaining", "operator": "gt", "value": "0"}
+        return tuple(Expense.from_api(r) for r in await self._find_all("expenses", "expense", condition))
+
+    async def tax_payments_since(self, since: date) -> tuple[TaxPayment, ...]:
+        """Payments recorded against ZUS and tax declarations, on or after `since`."""
+        condition = {"field": "Payment.object_name", "operator": "eq", "value": _DECLARATION}
+        records = await self._find_all("payments", "payment", condition)
+        payments = (TaxPayment.from_api(r) for r in records if r.get("object_name") == _DECLARATION)
+        return tuple(p for p in payments if p is not None and p.paid_on >= since)
+
+    async def company_profile(self) -> TaxProfile:
+        """The company's tax form and VAT status."""
+        payload = await self._request("companies", "find", {"companies": {"parameters": {"page": 1, "limit": 1}}})
+        record = next(_records(payload, "companies", "company"), None)
+        if record is None:
+            raise WfirmaNotFoundError("company settings not returned")
+        return TaxProfile.from_api(record)
