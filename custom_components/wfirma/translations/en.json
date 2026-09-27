@@ -57,7 +57,70 @@
       },
       "revenue_month_gross": {
         "name": "Revenue this month (gross)"
+      },
+      "unpaid_expenses": {
+        "name": "Bills to pay"
+      },
+      "unpaid_expenses_amount": {
+        "name": "Bills to pay amount"
+      },
+      "next_zus_payment": {
+        "name": "Next ZUS payment"
+      },
+      "next_income_tax_payment": {
+        "name": "Next income tax payment"
+      },
+      "next_vat_payment": {
+        "name": "Next VAT payment"
       }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Payments and taxes"
+      }
+    }
+  },
+  "services": {
+    "download_invoice": {
+      "name": "Download invoice PDF",
+      "description": "Saves a sales invoice as a PDF in the media folder (media/wfirma), exactly as wFirma prints it.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Company",
+          "description": "The wFirma company. Needed only when more than one is set up."
+        },
+        "number": {
+          "name": "Invoice number",
+          "description": "The full number, e.g. FV 3/9/2026."
+        }
+      }
+    },
+    "get_documents": {
+      "name": "Get documents and deadlines",
+      "description": "Returns unpaid and overdue sales invoices, bills to pay and the next ZUS/tax deadlines from the last refresh.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Company",
+          "description": "The wFirma company. Needed only when more than one is set up."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_company": {
+      "message": "No loaded wFirma company matches."
+    },
+    "choose_company": {
+      "message": "Several wFirma companies are set up: choose one."
+    },
+    "invoice_not_found": {
+      "message": "wFirma has no invoice numbered {number}."
+    },
+    "download_failed": {
+      "message": "Could not download invoice {number}: {reason}"
+    },
+    "path_not_allowed": {
+      "message": "Home Assistant may not write to {path}. Add it to allowlist_external_dirs."
     }
   }
 }

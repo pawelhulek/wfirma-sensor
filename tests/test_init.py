@@ -4,12 +4,16 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
-from freezegun.api import FrozenDateTimeFactory
 import pytest
+from freezegun.api import FrozenDateTimeFactory
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed, async_capture_events
+from pytest_homeassistant_custom_component.common import (
+    MockConfigEntry,
+    async_capture_events,
+    async_fire_time_changed,
+)
 
 from custom_components.wfirma.const import (
     CONF_ACCESS_KEY,
@@ -21,6 +25,7 @@ from custom_components.wfirma.const import (
     EVENT_INVOICE_PAID,
     SCAN_INTERVAL,
 )
+from custom_components.wfirma.deadlines import TaxProfile
 from custom_components.wfirma.diagnostics import async_get_config_entry_diagnostics
 from custom_components.wfirma.exceptions import (
     WfirmaAuthError,
@@ -66,7 +71,11 @@ def entry(hass: HomeAssistant) -> MockConfigEntry:
 def api():
     with patch(f"{CLIENT}.unpaid_invoices", AsyncMock(return_value=UNPAID)) as unpaid, patch(
         f"{CLIENT}.invoices_issued_since", AsyncMock(return_value=ISSUED)
-    ) as issued, patch(f"{CLIENT}.get_invoice", AsyncMock()) as get:
+    ) as issued, patch(f"{CLIENT}.get_invoice", AsyncMock()) as get, patch(
+        f"{CLIENT}.unpaid_expenses", AsyncMock(return_value=())
+    ), patch(f"{CLIENT}.tax_payments_since", AsyncMock(return_value=())), patch(
+        f"{CLIENT}.company_profile", AsyncMock(return_value=TaxProfile(income_tax="lumpregister", vat_payer=True))
+    ):
         yield type("Api", (), {"unpaid": unpaid, "issued": issued, "get": get})
 
 

@@ -5,36 +5,11 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from typing import Any
 
 from .const import BASE_CURRENCY, NON_SALES_TYPES
-
-_ZERO = Decimal("0")
-
-
-def _decimal(value: Any) -> Decimal:
-    """wFirma sends amounts as strings like "1230.00"; anything unreadable counts as zero."""
-    if value is None or value == "":
-        return _ZERO
-    try:
-        return Decimal(str(value))
-    except InvalidOperation:
-        return _ZERO
-
-
-def _date(value: Any) -> date | None:
-    """Dates are "YYYY-MM-DD"; wFirma uses "0000-00-00" for none."""
-    if not value:
-        return None
-    try:
-        return date.fromisoformat(str(value)[:10])
-    except ValueError:
-        return None
-
-
-def _text(value: Any) -> str:
-    return str(value).strip() if value is not None else ""
+from .parsing import ZERO, contractor_name, to_date, to_decimal, to_text
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,22 +31,19 @@ class Invoice:
     @classmethod
     def from_api(cls, raw: Mapping[str, Any]) -> Invoice:
         """Build from an API record; field names per the wFirma invoices module."""
-        invoice_id = _text(raw.get("id"))
-        contractor = raw.get("contractor_detail") or {}
-        if not isinstance(contractor, Mapping):
-            contractor = {}
+        invoice_id = to_text(raw.get("id"))
         return cls(
             id=invoice_id,
-            number=_text(raw.get("fullnumber")) or invoice_id,
-            issue_date=_date(raw.get("date")),
-            due_date=_date(raw.get("paymentdate")),
-            gross=_decimal(raw.get("total")),
-            net=_decimal(raw.get("netto")),
-            remaining=_decimal(raw.get("remaining")),
-            currency=_text(raw.get("currency")).upper() or BASE_CURRENCY,
-            doc_type=_text(raw.get("type")) or "normal",
-            payment_state=_text(raw.get("paymentstate")) or "undefined",
-            contractor=_text(contractor.get("name")) or _text(contractor.get("altname")),
+            number=to_text(raw.get("fullnumber")) or invoice_id,
+            issue_date=to_date(raw.get("date")),
+            due_date=to_date(raw.get("paymentdate")),
+            gross=to_decimal(raw.get("total")),
+            net=to_decimal(raw.get("netto")),
+            remaining=to_decimal(raw.get("remaining")),
+            currency=to_text(raw.get("currency")).upper() or BASE_CURRENCY,
+            doc_type=to_text(raw.get("type")) or "normal",
+            payment_state=to_text(raw.get("paymentstate")) or "undefined",
+            contractor=contractor_name(raw),
         )
 
     @property
@@ -81,7 +53,7 @@ class Invoice:
 
     @property
     def is_unpaid(self) -> bool:
-        return self.is_sales and self.remaining > _ZERO
+        return self.is_sales and self.remaining > ZERO
 
     def is_overdue(self, today: date) -> bool:
         return self.is_unpaid and self.due_date is not None and self.due_date < today
@@ -107,8 +79,8 @@ class Company:
     @classmethod
     def from_api(cls, raw: Mapping[str, Any]) -> Company | None:
         """user_companies records may be a relation: prefer the explicit company_* fields."""
-        company_id = _text(raw.get("company_id")) or _text(raw.get("id"))
-        name = _text(raw.get("company_name")) or _text(raw.get("name")) or _text(raw.get("altname"))
+        company_id = to_text(raw.get("company_id")) or to_text(raw.get("id"))
+        name = to_text(raw.get("company_name")) or to_text(raw.get("name")) or to_text(raw.get("altname"))
         if not company_id.isdigit():
             return None
         return cls(id=company_id, name=name or f"wFirma {company_id}")
